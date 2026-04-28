@@ -21,3 +21,4 @@ def show_age(alter:int):
 def add_age_numbers(zahl1:int, zahl2:int):
     ergebnis = zahl1 + zahl2
     return {"message": f"Die Summe aus {zahl1} + {zahl2} = {ergebnis}"}
+
