@@ -1,5 +1,5 @@
 ###############################
-### Simple API Endpoints (Day1)
+### Hochschule (Day1)
 ###############################
 
 #Tag 1
@@ -17,25 +17,12 @@ def greet_name(name:str):
     return {"message": f"Hello, {name}!"}
 
 
-@app.get("/alter/{alter}")
-def show_age(alter:int):
-    return {"message": f"Dein Alter ist:{alter}"}
 
 
-@app.get("/summe/{zahl1}/{zahl2}")
-def add_age_numbers(zahl1:int, zahl2:int):
-    ergebnis = zahl1 + zahl2
-    return {"message": f"Die Summe aus {zahl1} + {zahl2} = {ergebnis}"}
-app = FastAPI()
 
-@app.get("/")
-def root():
-    return {"message": "Hello, World!"}
-
-
-@app.get("/name/{name}")
-def greet_name(name:str):
-    return {"message": f"Hello, {name}!"}
+###################################
+### Hausaufgabe (Day1)
+###################################
 
 
 @app.get("/summe/{zahl1}/{zahl2}")
@@ -45,7 +32,7 @@ def add_age_numbers(zahl1:int, zahl2:int):
 
 
 ###################################
-### Note API Endpoints (Day2)
+### Hochschule (Day2)
 ###################################
 
 
@@ -67,6 +54,7 @@ class NoteCreate(BaseModel):
     title: str
     content: str
     category: str
+    tags: list[str] = []
 
 class Note(BaseModel):
     id: int
@@ -129,9 +117,9 @@ def list_notes() -> list[Note]:
         notes_db, _ = load_notes()
         return notes_db
     
-#########################
-### Ab hier Hausaufgabe
-##########################
+###################################
+### Hausaufgabe (Day2)
+###################################
 
 notes_db, note_id_counter = load_notes()
 save_notes_day2 = save_notes
@@ -151,7 +139,7 @@ def save_notes(notes_db_to_save=None):
     save_notes_day2(notes_db_to_save)
 
 
-@app.post("/notes", status_code=201)
+
 def create_note(note: NoteCreate):
     global note_id_counter
     
@@ -224,3 +212,28 @@ def delete_note(note_id: int):
             return {"message": "Note deleted"}
     
     raise HTTPException(404, "Note not found")
+
+
+###################################
+### Hochschule (Day3)
+###################################
+
+
+@app.get("/queryparameters")
+def query_parameters(param1: str = None, param2: int = None) -> dict:
+    
+    namen = ["Jonas", "Anna", "Johannes", "Maria", "Jörg"]
+    
+    if not param1:
+        return {"namen": namen}
+    
+    namen_gefiltert = []
+    for name in namen:
+        if param1 and param1 in name:
+            namen_gefiltert.append(name)
+    
+    return {
+        "param1": param1, 
+        "param2": param2,
+        "namen": namen_gefiltert
+    }
