@@ -93,29 +93,23 @@ Den Server-Fehler beim Coden konnte ich als kleinen, aber fatalen Flüchtigkeits
 ### Day 3
 
 #### 1. ✅ What did I accomplish?
+Heute stand ein fundamentaler technologischer Umbruch auf dem Plan: Die Migration unserer API von einer lokalen JSON-Dateispeicherung hin zu einer relationalen Datenbank mit SQLite und dem Framework SQLModel. Bevor ich mich an die Haupt-API machte, habe ich mich intensiv mit dem Konzept der Query-Parameter beschäftigt und diese, wie in der Vorlesung empfohlen, zunächst isoliert an einer Test-Route (/queryparameters) ausprobiert, um das Filter-Verhalten praktisch zu verstehen.
 
-
-
-
-
+Anschließend habe ich das Projekt architektonisch stark professionalisiert. Ich habe eine separate database.py angelegt und die Datenstrukturen in SQLModel-Klassen übersetzt, inklusive einer komplexen Many-to-Many-Beziehung (NoteTagLink) zwischen Notizen und Tags. Um den Code sauber zu halten, wurden die API-Modelle strikt in Eingabe- (NoteCreate), Ausgabe- (NoteResponse) und Update-Modelle (NoteUpdate) getrennt. Für eine saubere Kommunikation mit der Datenbank habe ich zudem eine FastAPI-Dependency (SessionDep) implementiert, die das Öffnen und Schließen von Datenbank-Sessions bei jedem Request automatisch handhabt. Darauf aufbauend habe ich die Endpunkte massiv erweitert: Die GET /notes-Route verfügt nun über komplexe Filter (nach Kategorie, Suchbegriff, Tags und Erstellungsdatum), ich habe eine PATCH-Route für teilweise Aktualisierungen programmiert und ein Skript geschrieben, das die alten JSON-Notizen automatisch in die neue Datenbank migriert.
 
 ---
 
 #### 2. 🚧 What challenges did I face?
+Die stark gestiegene Komplexität des Codes brachte im Entwickler-Alltag einige Hürden mit sich. Zunächst fiel mir auf, dass beim Öffnen der automatischen Dokumentation (/docs) im Terminal permanent die Warnung „Duplicate Operation ID“ erschien. Eine weitere große architektonische Schwierigkeit war die initiale Einrichtung der Many-to-Many-Beziehung in der Datenbank; es war anfangs schwer greifbar, wie diese Verknüpfungen funktionieren und wie man verwaiste Tags sauber aus dem System löscht.
 
-
-
-
-
+Darüber hinaus stand ich bei der Implementierung der teilweisen Updates (PATCH) vor dem logischen Problem, wie die API erkennen soll, welche Werte tatsächlich geändert werden sollen und welche unverändert bleiben, wenn der Nutzer nicht das komplette Objekt mitsendet. Auch die neu eingebauten Datums-Filter (created_before) zeigten eine Schwachstelle: Übergab man ein einzelnes Datum wie 2026-05-02 (ohne exakte Uhrzeit), wurde nicht der gesamte Tag in der Suche berücksichtigt. Zuletzt stieß ich beim Testen im Browser auf einen 404-Fehler („Not Found“), als ich versuchte, Notizen über eine bestimmte Kategorie-URL abzurufen.
 
 ---
 
 #### 3. 💡 How did I overcome them?
+Um diese Vielzahl an Problemen effizient und systematisch zu bewältigen, habe ich verschiedene Lernstrategien und Hilfsmittel eingesetzt, allen voran gezielt KI-Tools zur Code-Analyse. Die KI half mir hervorragend dabei, die „Duplicate Operation ID“-Warnung zu entschlüsseln: Durch das Zusammenführen der Codes aus den ersten beiden Tagen sowie der Hausaufgaben hatte ich grundlegende Instanzen wie app = FastAPI() und bestimmte Routen versehentlich doppelt im Dokument stehen. Nachdem ich diese Duplikate entfernt hatte, lief der Server wieder absolut fehlerfrei. Auch die anspruchsvolle Syntax und Funktionsweise der Datenbankbeziehungen (Many-to-Many) habe ich mir von der KI nochmals zeilengenau und verständlich erklären lassen.
 
-
-
-
-
+Um das Thema Query-Parameter über die Vorlesung hinaus tiefergehend zu durchdringen, habe ich mir ergänzend ein Tutorial-Video der „Tisfoulla Academy“ angesehen. Eine zentrale Erkenntnis daraus war, dass Parameter in FastAPI immer zwingend als Optional deklariert werden sollten, um Fehler zu vermeiden. Dieses Wissen konnte ich direkt auf mein PATCH-Problem anwenden: Ich erstellte ein eigenes Pydantic-Modell (NoteUpdate), bei dem alle Felder als optional markiert sind, was der API signalisiert, nur die explizit mitgesendeten Daten zu überschreiben. Den Datumsfilter habe ich programmatisch gelöst, indem ich den Code so anpasste, dass bei einer reinen Datumseingabe (Länge von 10 Zeichen) automatisch die Uhrzeit auf das Ende des Tages (time.max) gesetzt wird. Den 404-Fehler im Browser konnte ich letztlich selbst interpretieren und beheben, indem ich die passende, aber bis dato fehlende Route für die Kategorie-Suche im Code ergänzt habe.
 
 ---
 
