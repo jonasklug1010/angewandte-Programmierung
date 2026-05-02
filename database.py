@@ -33,7 +33,7 @@ class Tag(SQLModel, table=True):
     notes: list[Note] = Relationship(back_populates="tags", link_model=NoteTagLink)
 
 
-engine = create_engine("sqlite:///notes.db")
+engine = create_engine("sqlite:///notes.db", connect_args={"check_same_thread": False})
 
 
 def create_db_and_tables() -> None:
