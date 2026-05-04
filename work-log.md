@@ -118,29 +118,25 @@ Um das Thema Query-Parameter über die Vorlesung hinaus tiefergehend zu durchdri
 ### Day 4
 
 #### 1. ✅ What did I accomplish?
+Heute stand ein essenzielles Thema der Softwareentwicklung im Mittelpunkt: das automatisierte Testen von APIs. Mir wurde grundlegend klar, warum Testabdeckungen bei eigenen Projekten so wichtig sind – nicht nur um Fehler präventiv zu finden, sondern auch um bei späteren Code-Änderungen sofort überprüfen zu können, ob bestehende Funktionen weiterhin reibungslos laufen.
 
-
-
-
-
+Im ersten Schritt habe ich mich mit den Basis-Endpunkten des Tages (main-day4.py) beschäftigt und die dazugehörige Testdatei (test-day4.py) stark erweitert. Mithilfe der Bibliotheken pytest, requests und Faker (zur Generierung zufälliger Testdaten) habe ich acht zusätzliche Tests geschrieben. Dabei habe ich bewusst Extrem- und Grenzfälle für die Altersprüfung abgedeckt, wie zum Beispiel die Werte 0, 17, 18, 120 und 999. Ebenso habe ich Fehlerfälle getestet, etwa negative Zahlen oder falsche Datentypen, bei denen die API korrekterweise mit einem 400er- oder 422er-Statuscode antworten muss.
+Als Hauptaufgabe habe ich anschließend eine komplett neue, sehr umfangreiche Testdatei (test-main.py) für unser Hauptprojekt erstellt. Diese umfasst exakt 40 Tests und sichert alle bisherigen Funktionen ab: von den alten Tag-1-Routen über die Fehlerbehandlung (z. B. wenn Buchstaben statt Zahlen übergeben werden) bis hin zu den komplexen Datenbank-Routen der Notes-API. Es wird nun automatisch geprüft, ob Notizen korrekt angelegt, bearbeitet (PUT/PATCH), gelöscht und gefiltert (nach Kategorie, Datum oder Suchbegriff) werden. Zudem testen die Skripte, ob die Logik bei den Tags funktioniert, also ob leere Tags ignoriert, doppelte entfernt und alle Eingaben systematisch kleingeschrieben werden.
 
 ---
 
 #### 2. 🚧 What challenges did I face?
-
-
-
-
-
+Beim Aufbau dieser großen Testinfrastruktur bin ich auf mehrere praktische und konzeptionelle Hürden gestoßen. Die erste große Schwierigkeit bestand darin, dass unsere Tests über die requests-Bibliothek echte HTTP-Anfragen an die API senden. Das bedeutet, dass die Tests direkte Auswirkungen auf unsere echte notes.db SQLite-Datenbank haben. Wenn viele Tests nacheinander echte Notizen erstellen, verfälscht das nicht nur die Datenbank, sondern die Tests könnten sich gegenseitig stören (beispielsweise wenn ein Test eine Notiz löscht, die ein anderer Test gerade abrufen will).
+Eine weitere Herausforderung war es, exakt 40 sinnvolle und unterschiedliche Tests zu konzipieren, ohne Inhalte einfach nur redundant zu überschreiben oder zu wiederholen.
+Auf technischer Ebene gab es zudem Startschwierigkeiten mit dem Test-Framework selbst: Als ich versuchte, die Tests auszuführen, wurde pytest über den regulären python3-Befehl im Terminal nicht erkannt oder war nicht direkt verfügbar. Außerdem scheiterten die Anfragen anfangs komplett, wenn ich vergessen hatte, den FastAPI-Server parallel auf 127.0.0.1:8000 laufen zu lassen.
 
 ---
 
 #### 3. 💡 How did I overcome them?
+Um das kritische Problem mit der Datenbank und den sich gegenseitig störenden Tests zu lösen, habe ich die uuid-Bibliothek in mein Testskript integriert. Damit generiere ich nun für jeden Testdurchlauf einzigartige Testdaten (wie Titel, Kategorien oder Tags) mit einem dynamischen Hash-Wert. So kommen sich die Tests nicht in die Quere und die Datenbank bleibt strukturiert.
+Das technische Problem mit pytest konnte ich durch die Nutzung unseres Paketmanagers uv umgehen. Mit dem Befehl uv run pytest --collect-only -q test-main.py konnte ich zunächst sauber verifizieren, ob alle 40 Tests vom System korrekt erkannt werden, bevor ich sie durchlaufen ließ. Dass der lokale Server für die requests nebenbei laufen muss, habe ich als feste Regel in meinen Workflow übernommen.
 
-
-
-
-
+Der für mich wichtigste und lehrreichste Schritt heute war jedoch mein Umgang mit KI: Da der Test-Code extrem lang und komplex wurde, habe ich mir fest vorgenommen, nichts blind zu kopieren. Ich habe Gemini gezielt beim Erstellen der Tests genutzt und mir absolut jede einzelne Code-Zeile, die ich durchgegangen bin, detailliert erklären lassen. Diese Vorgehensweise hat mir enorm geholfen, die Logik hinter den Assertions, den Statuscodes und der Faker-Bibliothek wirklich tiefgreifend zu verstehen, sodass ich den Code nicht einfach nur sinnlos eingefügt habe, sondern das Konzept des Testens nun eigenständig anwenden kann.
 
 ---
 
