@@ -143,29 +143,23 @@ Der für mich wichtigste und lehrreichste Schritt heute war jedoch mein Umgang m
 ### Day 5
 
 #### 1. ✅ What did I accomplish?
+Heute lag der Schwerpunkt auf tiefgreifendem Code-Refactoring und der Implementierung einer strengen Datenvalidierung. Zu Beginn habe ich die main.py strukturell komplett aufgeräumt. Zuvor war der Code unübersichtlich gewachsen – so wurde die FastAPI()-Instanz anfangs doppelt erstellt und manche Routen wurden später unbeabsichtigt erneut registriert. Jetzt ist die Datei in klare, kommentierte logische Bereiche gegliedert (App-Setup, Validierungs-Hilfsfunktionen, API-Modelle, Datenbank und Endpunkte), was die Lesbarkeit und Wartbarkeit enorm erhöht.
 
-
-
-
-
+Fachlich habe ich die Notes-API durch Pydantic-Validierungen auf ein professionelles, sehr robustes Niveau gehoben. Ziel war es, fehlerhafte Benutzereingaben direkt beim Request abzufangen, noch bevor sie die Datenbanklogik erreichen. Dazu wurden die Modelle NoteCreate und NoteUpdate stark erweitert: Kategorien sind nun auf ein festes Set (wie "work", "personal", "school") limitiert, Tags werden über Regex-Muster validiert, und zusätzliche, nicht im Modell definierte Felder im Request werden durch die Pydantic-Konfiguration (extra="forbid") strikt blockiert. Um diese neuen Regeln abzusichern, habe ich eine neue Testdatei test_validation.py geschrieben. Diese nutzt FastAPIs TestClient, um gezielt Fehlerfälle (wie zu kurze Titel oder unbekannte Kategorien) zu provozieren und sicherzustellen, dass die API korrekterweise mit einem 422-Statuscode antwortet. Ergänzend habe ich ein Testskript einer Kommilitonin auf meinem Mac ausgeführt und erfolgreich verifiziert, dass unsere Systeme und Tests reibungslos miteinander kompatibel sind.
 
 ---
 
 #### 2. 🚧 What challenges did I face?
+Die größte Herausforderung des Tages war eine direkte Konsequenz meiner eigenen Optimierungen: Durch die Einführung der strengen Validierungsregeln fielen plötzlich viele meiner bereits bestehenden Tests aus den vorherigen Tagen durch. Das lag daran, dass ich in den alten Tests Tools wie uuid4 genutzt hatte, um zufällige, einzigartige Kategorienamen (z. B. "Testing-8a2f...") zu generieren. Da die neue API nun aber explizit nur noch feste Werte aus dem Set ALLOWED_CATEGORIES zulässt, wurden all diese automatisierten Test-Requests plötzlich mit einem Validierungsfehler (HTTP 422) abgelehnt.
 
-
-
-
-
+Eine weitere Hürde war die korrekte Implementierung der Pydantic-Validatoren selbst. Es war konzeptionell anspruchsvoll zu verstehen, wann Daten vor der eigentlichen Überprüfung bereinigt werden müssen (z. B. Whitespaces entfernen oder Strings in Kleinbuchstaben umwandeln) und wie man komplexe, feldübergreifende Abhängigkeiten prüft – wie etwa die neue Regel, dass eine Notiz der Kategorie "work" zwingend auch den Tag "work" enthalten muss.
 
 ---
 
 #### 3. 💡 How did I overcome them?
+Das Problem mit den fehlgeschlagenen Tests konnte ich systematisch beheben, indem ich die Logik der Testdaten-Generierung anpasste. Statt komplett zufälliger Strings für die Kategorien übergebe ich nun bei den betroffenen automatisierten Tests validen Dummy-Content (wie "general" oder "work"). Die Einzigartigkeit der Test-Notizen stelle ich nun ausschließlich über den Titel oder den Inhalt sicher, wodurch alle Tests wieder erfolgreich durchlaufen.
 
-
-
-
-
+Um die komplexe Syntax und Funktionsweise der Pydantic-Validatoren zu meistern, habe ich auch heute wieder gezielt KI-Unterstützung genutzt. Ich habe mir von der KI detailliert erklären lassen, wie der Datenfluss innerhalb von Pydantic funktioniert und wie genau sich die Dekoratoren @field_validator(mode="before") und @model_validator(mode="after") unterscheiden. Durch diesen interaktiven Erklärprozess habe ich nicht nur gelernt, wie man Eingaben normalisiert, bevor das System sie ablehnt, sondern auch verstanden, wie man feldübergreifende Logikprüfungen sauber programmiert. Dieser Schritt war entscheidend, um den Code nicht nur blind aus einem Tutorial zu übernehmen, sondern die tieferliegende Mechanik von Datenvalidierung in Python wirklich zu verinnerlichen.
 
 ---
 
