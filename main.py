@@ -1,48 +1,11 @@
-###############################
-### Hochschule (Day1)
-###############################
-
-#Tag 1
-from fastapi import FastAPI
-
-app = FastAPI()
-
-@app.get("/")
-def root():
-    return {"message": "Hello, World!"}
-
-
-@app.get("/name/{name}")
-def greet_name(name:str):
-    return {"message": f"Hello, {name}!"}
-
-
-
-
-
-###################################
-### Hausaufgabe (Day1)
-###################################
-
-
-@app.get("/summe/{zahl1}/{zahl2}")
-def add_age_numbers(zahl1:int, zahl2:int):
-    ergebnis = zahl1 + zahl2
-    return {"message": f"Die Summe aus {zahl1} + {zahl2} = {ergebnis}"}
-
-
-###################################
-### Hochschule (Day2)
-###################################
-
-
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
 from datetime import datetime, time
 import json
 from pathlib import Path
+import re
 from typing import Optional
 
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from sqlalchemy import func, or_
 from sqlmodel import Session, select
 
@@ -50,46 +13,215 @@ from database import Note as DBNote
 from database import NoteTagLink, SessionDep, Tag, create_db_and_tables, engine
 
 
+###################################
+### App setup
+###################################
+
 app = FastAPI(
     title="Applied Programming Course HS-Coburg",
     description="Simple note managment API",
     version="1.0.0"
 )
 
-create_db_and_tables()
-app.get("/")(root)
-app.get("/name/{name}")(greet_name)
-app.get("/summe/{zahl1}/{zahl2}")(add_age_numbers)
+NOTES_FILE = Path("data/notes.json")
+ALLOWED_CATEGORIES = {"work", "personal", "school", "ideas", "general"}
+TAG_PATTERN = re.compile(r"^[a-z0-9-]+$")
 
 
-# API Input model
+###################################
+### Hochschule (Day1)
+###################################
+
+@app.get("/")
+def root():
+    return {"message": "Hello, World!"}
+
+
+@app.get("/name/{name}")
+def greet_name(name: str):
+    return {"message": f"Hello, {name}!"}
+
+
+###################################
+### Hausaufgabe (Day1)
+###################################
+
+@app.get("/summe/{zahl1}/{zahl2}")
+def add_age_numbers(zahl1: int, zahl2: int):
+    ergebnis = zahl1 + zahl2
+    return {"message": f"Die Summe aus {zahl1} + {zahl2} = {ergebnis}"}
+
+
+###################################
+### Validation helpers
+###################################
+
+def reject_blank_title(value):
+    # Verhindert Titel, die nur aus Leerzeichen bestehen.
+    if isinstance(value, str) and not value.strip():
+        raise ValueError("Title must not be blank")
+    return value
+
+
+def normalize_category(value):
+    # Kategorien werden vor der Pruefung bereinigt und klein geschrieben.
+    if isinstance(value, str):
+        return value.strip().lower()
+    return value
+
+
+def validate_category(value: str) -> str:
+    # Es sind nur die Kategorien aus der Hausaufgabe erlaubt.
+    if value is None:
+        return value
+    
+    if value not in ALLOWED_CATEGORIES:
+        allowed = ", ".join(sorted(ALLOWED_CATEGORIES))
+        raise ValueError(f"Category must be one of: {allowed}")
+    return value
+
+
+def normalize_tags(value):
+    # Tags werden bereinigt, klein geschrieben und ohne Duplikate gespeichert.
+    if value is None:
+        return value
+    
+    if not isinstance(value, list):
+        return value
+    
+    normalized_tags = []
+    seen_tags = set()
+    
+    for tag in value:
+        if not isinstance(tag, str):
+            normalized_tags.append(tag)
+            continue
+        
+        normalized_tag = tag.strip().lower()
+        
+        if not normalized_tag:
+            raise ValueError("Tags must not be empty")
+        
+        if len(normalized_tag) < 2:
+            raise ValueError("Tags must be at least 2 characters long")
+        
+        if not TAG_PATTERN.fullmatch(normalized_tag):
+            raise ValueError("Tags may only contain lowercase letters, digits, and dashes")
+        
+        if normalized_tag not in seen_tags:
+            seen_tags.add(normalized_tag)
+            normalized_tags.append(normalized_tag)
+    
+    return normalized_tags
+
+
+###################################
+### API models
+###################################
+
 class NoteCreate(BaseModel):
-    title: str
-    content: str
-    category: str
-    tags: list[str] = []
+    # Pydantic prueft neue Notizen schon vor dem Speichern in die Datenbank.
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+    
+    title: str = Field(
+        ...,
+        min_length=3,
+        max_length=100,
+        description="Note title between 3 and 100 characters",
+        examples=["Team Meeting"]
+    )
+    content: str = Field(
+        ...,
+        min_length=1,
+        max_length=10000,
+        description="Note content between 1 and 10000 characters",
+        examples=["Discuss Q2 goals"]
+    )
+    category: str = Field(
+        ...,
+        min_length=2,
+        max_length=30,
+        pattern=r"^[a-z]+$",
+        description="One of: work, personal, school, ideas, general",
+        examples=["work"]
+    )
+    tags: list[str] = Field(
+        default_factory=list,
+        max_length=10,
+        description="Up to 10 tags, lowercase letters, digits, and dashes only",
+        examples=[["work", "urgent"]]
+    )
+    
+    _reject_blank_title = field_validator("title", mode="before")(reject_blank_title)
+    _normalize_category = field_validator("category", mode="before")(normalize_category)
+    _validate_category = field_validator("category")(validate_category)
+    _normalize_tags = field_validator("tags", mode="before")(normalize_tags)
+    
+    @model_validator(mode="after")
+    def work_notes_must_include_work_tag(self):
+        # Model validator, weil hier category und tags gemeinsam geprueft werden.
+        if self.category == "work" and "work" not in self.tags:
+            raise ValueError("Work notes must include the 'work' tag")
+        return self
 
 
-# API Output model
 class NoteResponse(BaseModel):
+    # Dieses Modell beschreibt, wie eine Notiz an den Client zurueckgegeben wird.
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     title: str
     content: str
     category: str
     tags: list[str]
     created_at: str
-    
-    class Config:
-        from_attributes = True
+
 
 class NoteUpdate(BaseModel):
-    title: Optional[str] = None
-    content: Optional[str] = None
-    category: Optional[str] = None
-    tags: Optional[list[str]] = None
+    # PATCH darf einzelne Felder auslassen, validiert aber alle gesendeten Felder.
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+    
+    title: Optional[str] = Field(
+        default=None,
+        min_length=3,
+        max_length=100,
+        description="Optional new title between 3 and 100 characters",
+        examples=["Updated Meeting"]
+    )
+    content: Optional[str] = Field(
+        default=None,
+        min_length=1,
+        max_length=10000,
+        description="Optional new content between 1 and 10000 characters",
+        examples=["Updated note content"]
+    )
+    category: Optional[str] = Field(
+        default=None,
+        min_length=2,
+        max_length=30,
+        pattern=r"^[a-z]+$",
+        description="Optional category: work, personal, school, ideas, general",
+        examples=["school"]
+    )
+    tags: Optional[list[str]] = Field(
+        default=None,
+        max_length=10,
+        description="Optional replacement tag list",
+        examples=[["school", "exam"]]
+    )
+    
+    _reject_blank_title = field_validator("title", mode="before")(reject_blank_title)
+    _normalize_category = field_validator("category", mode="before")(normalize_category)
+    _validate_category = field_validator("category")(validate_category)
+    _normalize_tags = field_validator("tags", mode="before")(normalize_tags)
 
+
+###################################
+### Database helpers
+###################################
 
 def note_to_response(note: DBNote) -> NoteResponse:
+    # Wandelt das Datenbankmodell in das API-Ausgabemodell um.
     return NoteResponse(
         id=note.id,
         title=note.title,
@@ -101,6 +233,7 @@ def note_to_response(note: DBNote) -> NoteResponse:
 
 
 def get_or_create_tags(tag_names: list[str], session: Session) -> list[Tag]:
+    # Sucht vorhandene Tags oder erstellt sie, wenn sie noch nicht existieren.
     tag_objects = []
     seen_tags = set()
     
@@ -117,7 +250,7 @@ def get_or_create_tags(tag_names: list[str], session: Session) -> list[Tag]:
         if existing_tag:
             tag_objects.append(existing_tag)
         else:
-            new_tag = Tag(name=tag_name_lower)
+            new_tag = Tag.model_validate({"name": tag_name_lower})
             session.add(new_tag)
             tag_objects.append(new_tag)
     
@@ -125,7 +258,7 @@ def get_or_create_tags(tag_names: list[str], session: Session) -> list[Tag]:
 
 
 def delete_unused_tags(session: Session) -> None:
-    """Remove tags that are no longer connected to any note."""
+    # Entfernt Tags, die nach Updates oder Deletes keiner Notiz mehr gehoeren.
     tags = session.exec(select(Tag)).all()
     
     for tag in tags:
@@ -134,17 +267,15 @@ def delete_unused_tags(session: Session) -> None:
 
 
 def parse_created_at(created_at: str) -> datetime:
+    # Datumsstrings aus JSON oder Query-Parametern werden in datetime umgewandelt.
     try:
         return datetime.fromisoformat(created_at)
     except ValueError:
         return datetime.now()
 
 
-NOTES_FILE = Path("data/notes.json")
-
-
 def migrate_json_notes_to_database() -> None:
-    """Migrate notes from data/notes.json into the SQLite database."""
+    # Alte JSON-Notizen werden beim Start einmalig in die SQLite-Datenbank uebernommen.
     if not NOTES_FILE.exists():
         return
     
@@ -172,12 +303,18 @@ def migrate_json_notes_to_database() -> None:
         session.commit()
 
 
+# Beim Import der App werden Tabellen erstellt und alte JSON-Daten migriert.
+create_db_and_tables()
 migrate_json_notes_to_database()
-        
+
+
+###################################
+### Note API Endpoints (Day2+)
+###################################
+
 @app.post("/notes", status_code=201)
 def create_note(note: NoteCreate, session: SessionDep) -> NoteResponse:
     """Create a new note in database"""
-    
     db_note = DBNote(
         title=note.title,
         content=note.content,
@@ -192,6 +329,7 @@ def create_note(note: NoteCreate, session: SessionDep) -> NoteResponse:
     
     return note_to_response(db_note)
 
+
 @app.get("/notes")
 def list_notes(
     *,
@@ -202,7 +340,7 @@ def list_notes(
     created_before: str = None,
     session: SessionDep
 ) -> list[NoteResponse]:
-    ######### Änderung Tag 3 Hausaufgabe 
+    # Die Abfrage wird Schritt fuer Schritt erweitert, wenn Filter gesetzt sind.
     statement = select(DBNote)
     
     if category:
@@ -238,7 +376,8 @@ def list_notes(
     
     notes_db = session.exec(statement).all()
     return [note_to_response(note) for note in notes_db]
-    
+
+
 @app.get("/notes/stats")
 def get_notes_stats(session: SessionDep):
     """
@@ -378,6 +517,10 @@ def delete_note(note_id: int, session: SessionDep):
     return
 
 
+###################################
+### Category and tag endpoints
+###################################
+
 @app.get("/categories")
 def list_categories(session: SessionDep) -> list[str]:
     """Get all unique categories from all notes"""
@@ -406,16 +549,13 @@ def list_tags(session: SessionDep) -> list[str]:
 @app.get("/tags/{tag_name}/notes")
 def get_notes_by_tag(tag_name: str, session: SessionDep) -> list[NoteResponse]:
     """Get all notes with specific tag"""
-    
-    # Find the tag (case-insensitive)
     tag_lower = tag_name.lower()
     statement = select(Tag).where(Tag.name == tag_lower)
     tag = session.exec(statement).first()
     
     if not tag:
-        return []  # No notes if tag doesn't exist
+        return []
     
-    # Return all notes associated with this tag
     return [
         note_to_response(note)
         for note in tag.notes
@@ -426,10 +566,8 @@ def get_notes_by_tag(tag_name: str, session: SessionDep) -> list[NoteResponse]:
 ### Hochschule (Day3)
 ###################################
 
-
 @app.get("/queryparameters")
 def query_parameters(param1: str = None, param2: int = None) -> dict:
-    
     namen = ["Jonas", "Anna", "Johannes", "Maria", "Jörg"]
     
     if not param1:
@@ -441,7 +579,7 @@ def query_parameters(param1: str = None, param2: int = None) -> dict:
             namen_gefiltert.append(name)
     
     return {
-        "param1": param1, 
+        "param1": param1,
         "param2": param2,
         "namen": namen_gefiltert
     }

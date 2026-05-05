@@ -1,8 +1,13 @@
 from datetime import datetime
+import re
 from typing import Annotated, Optional
 
 from fastapi import Depends
+from pydantic import field_validator
 from sqlmodel import Field, Relationship, Session, SQLModel, create_engine
+
+
+TAG_NAME_PATTERN = re.compile(r"^[a-z0-9-]+$")
 
 
 class NoteTagLink(SQLModel, table=True):
@@ -28,9 +33,23 @@ class Tag(SQLModel, table=True):
     __tablename__ = "tags"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    name: str = Field(unique=True, index=True)
+    name: str = Field(unique=True, index=True, min_length=2, max_length=30)
 
     notes: list[Note] = Relationship(back_populates="tags", link_model=NoteTagLink)
+    
+    @field_validator("name", mode="before")
+    @classmethod
+    def normalize_name(cls, value):
+        if isinstance(value, str):
+            return value.strip().lower()
+        return value
+    
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, value: str) -> str:
+        if not TAG_NAME_PATTERN.fullmatch(value):
+            raise ValueError("Tag name may only contain lowercase letters, digits, and dashes")
+        return value
 
 
 engine = create_engine("sqlite:///notes.db", connect_args={"check_same_thread": False})

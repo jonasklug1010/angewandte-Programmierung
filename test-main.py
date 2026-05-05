@@ -20,7 +20,7 @@ def create_test_note(
     note_data = {
         "title": title or unique_text("Test Note"),
         "content": content or unique_text("Test Content"),
-        "category": category or unique_text("test-category"),
+        "category": category or "general",
         "tags": tags or ["test"]
     }
     response = requests.post(f"{BASE_URL}/notes", json=note_data, timeout=TIMEOUT)
@@ -119,11 +119,17 @@ def test_main_create_note_duplicate_tags_removed():
     assert note["tags"] == ["work"]
 
 
-# Testet, ob leere Tags beim Erstellen ignoriert werden.
-def test_main_create_note_empty_tags_ignored():
-    note = create_test_note(tags=["", "   ", "valid"])
+# Testet, ob leere Tags beim Erstellen mit 422 abgelehnt werden.
+def test_main_create_note_empty_tags_return_422():
+    note_data = {
+        "title": unique_text("Empty Tags"),
+        "content": "Tags must not be empty",
+        "category": "general",
+        "tags": ["", "   ", "valid"]
+    }
+    response = requests.post(f"{BASE_URL}/notes", json=note_data, timeout=TIMEOUT)
     
-    assert note["tags"] == ["valid"]
+    assert response.status_code == 422
 
 
 # Testet, ob eine Notiz auch ohne Tags erstellt werden kann.
@@ -131,7 +137,7 @@ def test_main_create_note_without_tags():
     note_data = {
         "title": unique_text("No Tags"),
         "content": "Created without tags",
-        "category": unique_text("no-tags-category")
+        "category": "general"
     }
     response = requests.post(f"{BASE_URL}/notes", json=note_data, timeout=TIMEOUT)
     
@@ -143,7 +149,7 @@ def test_main_create_note_without_tags():
 def test_main_create_note_missing_title_returns_422():
     note_data = {
         "content": "Missing title",
-        "category": "validation",
+        "category": "general",
         "tags": ["validation"]
     }
     response = requests.post(f"{BASE_URL}/notes", json=note_data, timeout=TIMEOUT)
@@ -179,7 +185,7 @@ def test_main_list_notes_contains_created_note():
 
 # Testet, ob Notizen nach Kategorie gefiltert werden koennen.
 def test_main_list_notes_filter_by_category():
-    category = unique_text("filter-category")
+    category = "school"
     note = create_test_note(category=category, tags=["category-filter"])
     response = requests.get(f"{BASE_URL}/notes?category={category}", timeout=TIMEOUT)
     ids = [item["id"] for item in response.json()]
@@ -223,7 +229,7 @@ def test_main_list_notes_filter_by_tag():
 
 # Testet, ob Kategorie und Tag gemeinsam als Filter funktionieren.
 def test_main_list_notes_filter_by_category_and_tag():
-    category = unique_text("combo-category")
+    category = "ideas"
     tag = unique_text("combo-tag")
     note = create_test_note(category=category, tags=[tag])
     response = requests.get(f"{BASE_URL}/notes?category={category}&tag={tag}", timeout=TIMEOUT)
@@ -255,7 +261,7 @@ def test_main_list_notes_filter_created_before_future():
 
 # Testet, ob die alte Kategorie-Route /notes/category/{category} funktioniert.
 def test_main_get_notes_by_category_old_route():
-    category = unique_text("old-category-route")
+    category = "personal"
     note = create_test_note(category=category, tags=["old-category"])
     response = requests.get(f"{BASE_URL}/notes/category/{category}", timeout=TIMEOUT)
     ids = [item["id"] for item in response.json()]
@@ -266,7 +272,7 @@ def test_main_get_notes_by_category_old_route():
 
 # Testet, ob die Kategorienliste eine neu erstellte Kategorie enthaelt.
 def test_main_list_categories_contains_created_category():
-    category = unique_text("category-list")
+    category = "school"
     create_test_note(category=category, tags=["category-list"])
     response = requests.get(f"{BASE_URL}/categories", timeout=TIMEOUT)
     
@@ -276,7 +282,7 @@ def test_main_list_categories_contains_created_category():
 
 # Testet, ob die neue Kategorien-Route /categories/{category}/notes funktioniert.
 def test_main_get_notes_by_category_new_route():
-    category = unique_text("new-category-route")
+    category = "general"
     note = create_test_note(category=category, tags=["new-category"])
     response = requests.get(f"{BASE_URL}/categories/{category}/notes", timeout=TIMEOUT)
     ids = [item["id"] for item in response.json()]
@@ -321,7 +327,7 @@ def test_main_update_note_with_put():
     update_data = {
         "title": "Updated PUT Title",
         "content": "Updated PUT Content",
-        "category": "updated-put-category",
+        "category": "personal",
         "tags": ["after-put"]
     }
     response = requests.put(f"{BASE_URL}/notes/{note['id']}", json=update_data, timeout=TIMEOUT)
@@ -336,7 +342,7 @@ def test_main_update_unknown_note_returns_404():
     update_data = {
         "title": "Unknown",
         "content": "Unknown",
-        "category": "unknown",
+        "category": "general",
         "tags": ["unknown"]
     }
     response = requests.put(f"{BASE_URL}/notes/999999999", json=update_data, timeout=TIMEOUT)
@@ -421,7 +427,7 @@ def test_main_stats_contains_expected_keys():
 
 # Testet, ob die Statistik eine neu erstellte Kategorie mitzaehlt.
 def test_main_stats_counts_created_category():
-    category = unique_text("stats-category")
+    category = "ideas"
     create_test_note(category=category, tags=["stats-category"])
     response = requests.get(f"{BASE_URL}/notes/stats", timeout=TIMEOUT)
     
