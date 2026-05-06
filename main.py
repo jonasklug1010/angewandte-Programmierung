@@ -5,7 +5,7 @@ import re
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import func, or_
 from sqlmodel import Session, select
 
@@ -157,13 +157,6 @@ class NoteCreate(BaseModel):
     _validate_category = field_validator("category")(validate_category)
     _normalize_tags = field_validator("tags", mode="before")(normalize_tags)
     
-    @model_validator(mode="after")
-    def work_notes_must_include_work_tag(self):
-        # Model validator, weil hier category und tags gemeinsam geprueft werden.
-        if self.category == "work" and "work" not in self.tags:
-            raise ValueError("Work notes must include the 'work' tag")
-        return self
-
 
 class NoteResponse(BaseModel):
     # Dieses Modell beschreibt, wie eine Notiz an den Client zurueckgegeben wird.
@@ -274,6 +267,17 @@ def parse_created_at(created_at: str) -> datetime:
         return datetime.now()
 
 
+def parse_filter_datetime(value: str) -> datetime:
+    # Query-Parameter muessen gueltige ISO-Datumswerte sein, sonst gibt die API 422 zurueck.
+    try:
+        return datetime.fromisoformat(value)
+    except ValueError:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Invalid datetime value: {value}"
+        )
+
+
 def migrate_json_notes_to_database() -> None:
     # Alte JSON-Notizen werden beim Start einmalig in die SQLite-Datenbank uebernommen.
     if not NOTES_FILE.exists():
@@ -365,10 +369,10 @@ def list_notes(
         )
     
     if created_after:
-        statement = statement.where(DBNote.created_at >= parse_created_at(created_after))
+        statement = statement.where(DBNote.created_at >= parse_filter_datetime(created_after))
     
     if created_before:
-        created_before_value = parse_created_at(created_before)
+        created_before_value = parse_filter_datetime(created_before)
         if len(created_before) == 10:
             created_before_value = datetime.combine(created_before_value.date(), time.max)
         
