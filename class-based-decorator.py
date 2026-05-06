@@ -26,6 +26,9 @@ class Cache:
     def __call__(self, *args, **kwargs):
         ic("call")
         key=(args, frozenset(kwargs.items()))
+        ic(kwargs.items())
+        ic (frozenset(kwargs.items()))
+        ic (list(frozenset(kwargs.items())))
         ic(key)
         if key in self.cache:
             self.history.append(("cache",args, kwargs, self.cache[key]))
@@ -40,14 +43,14 @@ class Cache:
 
 
 @Cache
-def complicated_calculation(x):
+def complicated_calculation(x, comment = "No comment"):
     print(f"Performing complicated calculation for {x}...")
     time.sleep(2)
     return x * x
 
 
 @Cache
-def complicated_calculation_2(x):
+def complicated_calculation_2(x, comment = "No comment"):
     print(f"Performing complicated calculation 2 for {x}...")
     time.sleep(2)
     return x * x
