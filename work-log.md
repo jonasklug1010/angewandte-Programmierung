@@ -226,29 +226,31 @@ Diese hochgradig systematische Vorgehensweise – erst das kryptische Fehlerbild
 ### Day 7
 
 #### 1. ✅ What did I accomplish?
+Der heutige Kurstag markierte einen spannenden Wechsel in unserem Projekt: Wir haben die reine Backend-Entwicklung vorerst verlassen und uns der Erstellung eines Frontends (einer grafischen Benutzeroberfläche) gewidmet.
 
+Als kleine organisatorische Vorarbeit habe ich zunächst die klassenbasierte Decorator-Beispieldatei von letzter Vorlesung in einen Ordner namens exploration verschoben. Dies diente dazu, das Hauptverzeichnis des Projekts sauber und übersichtlich zu halten. Im Anschluss habe ich über das Terminal (uv run) verifiziert, dass die Datei trotz des neuen Pfades weiterhin syntaktisch korrekt ist und fehlerfrei ausgeführt werden kann.
 
+Der inhaltliche Schwerpunkt lag danach vollständig auf dem Python-Framework Streamlit. Im gemeinsamen Teil der Vorlesung haben wir zunächst die Grundlagen erarbeitet. Wir haben eine simple Applikation geschrieben, die eine externe, öffentliche API (naas.isalman.dev/no) abfragt und die JSON-Antworten auf Knopfdruck im Browser darstellt. Hierbei haben wir zentrale Streamlit-Elemente wie st.button, st.text_input und st.write kennengelernt. Das wichtigste Konzept, das wir dabei implementiert haben, war die Zustandsverwaltung über st.session_state.
 
-
-
+In der anschließenden Hausaufgabe habe ich dieses Wissen angewandt und völlig eigenständig eine echte Benutzeroberfläche für unsere lokale Notes-API programmiert. Ich habe die Datei frontend.py so erweitert, dass sie als Brücke zu unserer Datenbank fungiert.
+Dazu habe ich zwei Hauptfunktionen implementiert: Erstens einen Lese-Bereich, in dem über die Funktion load_notes() alle vorhandenen Notizen per GET-Request vom Backend (127.0.0.1:8000) geladen und in einem interaktiven Dropdown-Menü (st.selectbox) übersichtlich präsentiert werden. Zweitens einen Schreib-Bereich in Form eines Eingabeformulars (st.form). Hier kann der Nutzer Titel, Inhalt, Kategorie (aus einem vorgegebenen Dropdown) und Tags eingeben. Über die von mir geschriebene Hilfsfunktion parse_tags() wird der eingegebene Tag-String sauber in eine Python-Liste umgewandelt und via POST-Request (Notes()) an das Backend gesendet. Bei erfolgreicher Erstellung erzwingt das Skript einen automatischen Page-Reload (st.rerun()) und zeigt über den Session-State eine Erfolgsmeldung (st.success) an, sodass die neue Notiz sofort in der UI sichtbar wird.
 
 ---
 
 #### 2. 🚧 What challenges did I face?
+Der Einstieg in die Frontend-Entwicklung brachte völlig neue architektonische und konzeptionelle Herausforderungen mit sich. Während der Vorlesung gab es bei mir anfangs deutliche Verständnisprobleme bezüglich der Ausführungslogik von Streamlit. Das Framework arbeitet mit einem reaktiven Paradigma: Bei jeder Benutzerinteraktion (z. B. einem Klick auf einen Button oder einer Texteingabe) wird das gesamte Python-Skript von oben nach unten neu ausgeführt. Es war für mich zunächst sehr unlogisch und verwirrend, warum normale Variablen dadurch bei jedem Klick ihre Werte verloren und warum wir zwingend Konstrukte wie if "text1" not in st.session_state: verwenden mussten, um Daten am Leben zu halten.
 
-
-
-
-
+Die Hausaufgabe stellte mich dann vor noch größere praktische Hürden. Da ich bisher kaum Erfahrung in der Frontend-Gestaltung hatte, war es enorm schwierig, alles so hinzubekommen, wie es sein soll. Die korrekte Anordnung der UI-Elemente und das Verknüpfen der Buttons mit den Backend-Funktionen fühlten sich komplex an.
+Eine sehr spezifische Hürde war die Verarbeitung der Benutzereingaben für die Tags. Da unsere FastAPI-Backend-Validierung aus den Vortagen extrem streng ist (Tags müssen eine Liste sein, kleingeschrieben, ohne Leerzeichen), musste ich sicherstellen, dass die rohe Texteingabe aus dem Frontend (z.B. "School , EXAM,") exakt in das erwartete Format umgewandelt wird, bevor der Request abgeschickt wird. Täte ich das nicht, würde das Backend den POST-Request sofort mit einem 422-Error ablehnen. Zudem musste ich sicherstellen, dass das Skript nicht abstürzt, wenn der Backend-Server versehentlich gar nicht läuft.
 
 ---
 
 #### 3. 💡 How did I overcome them?
+Die anfänglichen theoretischen Verständnisprobleme während der Vorlesung klärten sich erfreulicherweise im Laufe der gemeinsamen Programmierung. Durch die detaillierten Erklärungen des Professors und das direkte Beobachten, wie sich die Werte im st.expander("Session state") bei jedem Reload verhielten, hat es Klick gemacht. Ich habe die Notwendigkeit des Session-States für die Persistenz von Daten in Streamlit nun grundlegend durchdrungen.
 
+Um die massiven Hürden bei der Hausaufgabe zu bewältigen, habe ich extrem intensiv auf KI-Unterstützung gesetzt. Da die Syntax von Streamlit und die Kombination mit der requests-Bibliothek für mich Neuland waren, habe ich nicht versucht, stundenlang blind herumzuprobieren. Stattdessen habe ich die KI als Mentor genutzt: Ich habe mir einzelne, komplexe Code-Zeilen (wie z. B. die Funktionsweise von response.raise_for_status(), die Lambda-Funktion innerhalb der st.selectbox oder das pop() beim Abrufen der Erfolgsmeldung aus dem Session-State) detailliert erstellen und erklären lassen.
 
-
-
-
+Besonders bei der Datenaufbereitung hat mir diese Vorgehensweise geholfen: Ich habe eine saubere Logik für die Funktion parse_tags() entwickelt, die den String am Komma trennt (.split(",")), die Leerzeichen entfernt (.strip()) und alles in Kleinbuchstaben umwandelt (.lower()), sodass die Strenge unseres Backends befriedigt wird. Um Abstürze bei nicht laufendem Server zu verhindern, habe ich zudem gelernt, wie man einen sauberen try-except-Block (requests.exceptions.RequestException) um den API-Aufruf baut und dem Nutzer in Streamlit eine rote st.error-Box anzeigt, statt das Programm crashen zu lassen. Durch das zeilenweise Erklärenlassen habe ich den Code nicht einfach nur kopiert, sondern die Brücke zwischen Frontend (Nutzerinteraktion) und Backend (Datenverarbeitung) wirklich verstanden.
 
 ---
 
