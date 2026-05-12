@@ -257,19 +257,14 @@ Besonders bei der Datenaufbereitung hat mir diese Vorgehensweise geholfen: Ich h
 ### Day 8
 
 #### 1. ✅ What did I accomplish?
-
-
-
-
-
+Am heutigen letzten Projekttag habe ich keine neuen Änderungen mehr am Code vorgenommen, sondern mich ausschließlich auf den finalen Checkup für die Abgabe konzentriert. Ich habe alle Projektdateien aufgeräumt und sauber strukturiert. Zum Abschluss habe ich die gesamte Test-Suite noch einmal vollständig durchlaufen lassen, um endgültig sicherzustellen, dass das System reibungslos funktioniert und das Projekt abgabebereit ist.
 
 ---
 
 #### 2. 🚧 What challenges did I face?
 
 
-
-
+/
 
 
 ---
@@ -277,40 +272,7 @@ Besonders bei der Datenaufbereitung hat mir diese Vorgehensweise geholfen: Ich h
 #### 3. 💡 How did I overcome them?
 
 
-
-
-
-
----
-
-### Day 9
-
-#### 1. ✅ What did I accomplish?
-
-
-
-
-
-
----
-
-#### 2. 🚧 What challenges did I face?
-
-
-
-
-
-
----
-
-#### 3. 💡 How did I overcome them?
-
-
-
-
-
-
----
+/
 
 
 # 🎉 Congratulations! You did it! 🎓✨
