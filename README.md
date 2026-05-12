@@ -107,6 +107,10 @@ uv run pytest checks/test-main-martin.py
 
 ```text
 angewandte-Programmierung/
+├── __pycache__
+├── .pytest_cache
+├── .venv
+├── .vscode
 ├── checks/
 │   ├── test-main-eigene.py
 │   ├── test-main-martin.py
@@ -119,11 +123,14 @@ angewandte-Programmierung/
 │   └── main-day4.py
 ├── presentations/
     └── ...
+├── .gitignore
+├── .python-version
 ├── database.py
 ├── frontend.py
 ├── main.py
 ├── notes.db
 ├── pyproject.toml
+├── README.md
 ├── uv.lock
 └── work-log.md
 ```
