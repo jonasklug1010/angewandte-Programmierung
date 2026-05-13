@@ -257,7 +257,7 @@ Besonders bei der Datenaufbereitung hat mir diese Vorgehensweise geholfen: Ich h
 ### Day 8
 
 #### 1. ✅ What did I accomplish?
-Am heutigen letzten Projekttag habe ich keine neuen Änderungen mehr am Code vorgenommen, sondern mich ausschließlich auf den finalen Checkup für die Abgabe konzentriert. Ich habe alle Projektdateien aufgeräumt und sauber strukturiert. Zum Abschluss habe ich die gesamte Test-Suite noch einmal vollständig durchlaufen lassen, um endgültig sicherzustellen, dass das System reibungslos funktioniert und das Projekt abgabebereit ist.
+Am heutigen letzten Projekttag habe ich keine neuen Änderungen mehr am Code vorgenommen, sondern mich ausschließlich auf den finalen Checkup für die Abgabe konzentriert. Ich habe alle Projektdateien aufgeräumt und sauber strukturiert. Zum Abschluss habe ich die gesamte Test-Suite noch einmal vollständig durchlaufen lassen, um endgültig sicherzustellen, dass das System reibungslos funktioniert und das Projekt abgabebereit ist. Zusätzlich habe ich die README.md-Datei des Projekts überarbeitet und finalisiert. Um die Projektdokumentation professionell, gut strukturiert und schön ausführlich zu gestalten, habe ich die KI Gemini als Assistenz genutzt. So ist das gesamte Projekt für die Abgabe nun nicht nur technisch, sondern auch inhaltlich optimal und verständlich dokumentiert.
 
 ---
 
